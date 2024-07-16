@@ -1,9 +1,9 @@
+from model import resnet34
 import os
 import argparse
 import torch
 from torchvision import transforms
 import json
-from model import resnet34
 from PIL import Image
 
 
@@ -30,7 +30,7 @@ def generate_txt(args):
          transforms.ToTensor(),
          transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
     # read class_indict
-    json_path = './class_indices.json'
+    json_path = 'log/height_center/class_indices.json'
     assert os.path.exists(json_path), f"file: '{json_path}' dose not exist."
 
     json_file = open(json_path, "r")
@@ -40,7 +40,7 @@ def generate_txt(args):
     model = resnet34(num_classes=5).to(device)
 
     # load model weights
-    weights_path = "./resNet34.pth"
+    weights_path = "log/height_center/resNet34.pth"
     assert os.path.exists(weights_path), f"file: '{weights_path}' dose not exist."
     model.load_state_dict(torch.load(weights_path, map_location=device))
 
@@ -54,17 +54,15 @@ def generate_txt(args):
     with torch.no_grad():
         for img_path in img_path_list:
             img = Image.open(img_path)
-            img = data_transform(img)
-            img = torch.unsqueeze(img, dim=0)
-            output = torch.squeeze(model(img.to(device))).cpu()
-            predict = torch.softmax(output, dim=0)
+            img = data_transform(img).unsqueeze(0)
 
-            predict_cla = torch.argmax(predict).numpy()
+            # predict class
+            output = model(img.to(device)).cpu()
+            predict = torch.softmax(output, dim=1)
+            probs, classes = torch.max(predict, dim=1)
 
-            lanes_list.append(class_indict[str(predict_cla)])
-        # for i in range(len(predict)):
-        #     print("class: {:10}   prob: {:.3}".format(class_indict[str(i)],
-        #                                               predict[i].numpy()))
+            for idx, (pro, cla) in enumerate(zip(probs, classes)):
+                lanes_list.append(class_indict[str(cla.numpy())])
     # 写入txt文件
     # filename = os.path.join(args.save_dir, 'lanes_cls.txt')
     # 写入整个列表到文件
