@@ -16,7 +16,7 @@ def parse_args():
     #                     help='生成txt文件的保存路径')
     parser.add_argument('--save_txt', type=str, default=os.path.join(os.getcwd(), "lanes_cls.txt"),
                         help='生成txt文件的保存路径')
-    parser.add_argument('--batch_size', type=int, default=1, help='每次预测时将多少张图片打包成一个batch')
+    # parser.add_argument('--batch_size', type=int, default=1, help='每次预测时将多少张图片打包成一个batch')
 
     return parser.parse_args()
 
