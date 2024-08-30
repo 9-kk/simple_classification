@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import transforms, datasets
+from torchvision import utils as vutils
 from tqdm import tqdm
 
 from model import resnet34
@@ -142,6 +143,7 @@ def main(args):
 
     data_transform = {
         "train": transforms.Compose([
+            # TODO：旋转数据增强
             # transforms.RandomHorizontalFlip(),
             # fixed_height_random_width_crop,
             transforms.RandomResizedCrop(args.input_shape, scale=(0.5, 1.0), ratio=(1, 1.19)),
@@ -224,12 +226,24 @@ def main(args):
     # 实例化loss曲线绘制的类
     draw_loss = loss_draw(save_dir)
     for epoch in range(args.epochs):
+        # 定义保存图片的路径
+        save_dir = os.path.join('testdata', str(epoch))
+        if not os.path.exists(save_dir):
+            # 如果文件夹不存在，则创建文件夹
+            os.makedirs(save_dir)
         # train
         net.train()
         running_loss = 0.0
         train_bar = tqdm(train_loader, file=sys.stdout)
         for step, data in enumerate(train_bar):
             images, labels = data
+            # 每一批取一张图打印出来
+            tensor = images[0].cpu().byte()
+            # 调整通道顺序
+            # 将 PyTorch 张量的形状从 [3, 256, 256] 转换为 [256, 256, 3]
+            image_np = tensor.permute(1, 2, 0).numpy()
+            # 或者保存图像
+            cv2.imwrite(os.path.join(save_dir, str(step) + '.jpg'), image_np)
             optimizer.zero_grad()
             logits = net(images.to(device))
             loss = loss_function(logits, labels.to(device))
